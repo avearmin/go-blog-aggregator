@@ -27,6 +27,8 @@ func main() {
 	mainRouter.Use(cors.Handler(corsOptions))
 
 	subRouter := chi.NewRouter()
+	subRouter.Get("/readiness", handleEndpointReadiness)
+	subRouter.Get("/err", handleEndpointErr)
 	mainRouter.Mount("/v1", subRouter)
 
 	server := http.Server{
@@ -58,4 +60,17 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 	respondWithJSON(w, code, errorResponse{
 		Error: msg,
 	})
+}
+
+func handleEndpointReadiness(w http.ResponseWriter, r *http.Request) {
+	type payload struct {
+		Status string `json:"status"`
+	}
+	respondWithJSON(w, http.StatusOK, payload{
+		Status: "ok",
+	})
+}
+
+func handleEndpointErr(w http.ResponseWriter, r *http.Request) {
+	respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
 }
