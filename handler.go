@@ -1,6 +1,12 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+
+	"github.com/avearmin/go-blog-aggregator/internal/database"
+	"github.com/google/uuid"
+)
 
 func handleEndpointReadiness(w http.ResponseWriter, r *http.Request) {
 	type payload struct {
@@ -13,4 +19,28 @@ func handleEndpointReadiness(w http.ResponseWriter, r *http.Request) {
 
 func handleEndpointErr(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, http.StatusInternalServerError, "Internal Server Error")
+}
+
+func (cfg apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Name string `json:"name"`
+	}
+	params := parameters{}
+	if err := readRequest(r, &params); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      params.Name,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
 }

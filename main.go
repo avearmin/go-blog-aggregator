@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 	"os"
+
+	"github.com/avearmin/go-blog-aggregator/internal/database"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -10,11 +13,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type apiConfig struct {
+	DB *database.Queries
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
 	port := os.Getenv("PORT")
+	dbURL := os.Getenv("CONN_STRING")
+
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		panic(err)
+	}
+	dbQueries := database.New(db)
+
+	apiConfig := apiConfig{DB: dbQueries}
 
 	mainRouter := chi.NewRouter()
 
@@ -28,6 +44,7 @@ func main() {
 	subRouter := chi.NewRouter()
 	subRouter.Get("/readiness", handleEndpointReadiness)
 	subRouter.Get("/err", handleEndpointErr)
+	subRouter.Post("/users", apiConfig.handlePostUser)
 	mainRouter.Mount("/v1", subRouter)
 
 	server := http.Server{
