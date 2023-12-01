@@ -26,7 +26,7 @@ func (cfg apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	params := parameters{}
-	if err := readRequest(r, &params); err != nil {
+	if err := readParameters(r, &params); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -40,6 +40,19 @@ func (cfg apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
+}
+
+func (cfg apiConfig) handleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	apikey, err := readApikey(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+	}
+	user, err := cfg.DB.GetUserByApikey(r.Context(), apikey)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, err.Error())
 	}
 
 	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
