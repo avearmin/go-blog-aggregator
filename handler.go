@@ -49,10 +49,12 @@ func (cfg apiConfig) handleGetCurrentUser(w http.ResponseWriter, r *http.Request
 	apikey, err := readApikey(r)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 	user, err := cfg.DB.GetUserByApikey(r.Context(), apikey)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, err.Error())
+		return
 	}
 
 	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
