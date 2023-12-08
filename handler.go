@@ -45,17 +45,32 @@ func (cfg apiConfig) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
 }
 
-func (cfg apiConfig) handleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	apikey, err := readApikey(r)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
-		return
+func handleGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
+}
+
+func (cfg apiConfig) handlePostFeed(w http.ResponseWriter, r *http.Request, user database.User) {
+	type parameters struct {
+		Name string `json:"name"`
+		Url  string `json:"url"`
 	}
-	user, err := cfg.DB.GetUserByApikey(r.Context(), apikey)
-	if err != nil {
-		respondWithError(w, http.StatusNotFound, err.Error())
+	params := parameters{}
+	if err := readParameters(r, &params); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dbUserToJSONUser(user))
+	feed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      params.Name,
+		Url:       params.Url,
+		Userid:    user.ID,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, dbFeedToJSONFeed(feed))
 }
