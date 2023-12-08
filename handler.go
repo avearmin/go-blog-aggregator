@@ -74,3 +74,12 @@ func (cfg apiConfig) handlePostFeed(w http.ResponseWriter, r *http.Request, user
 	}
 	respondWithJSON(w, http.StatusOK, dbFeedToJSONFeed(feed))
 }
+
+func (cfg apiConfig) handleGetAllFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := cfg.DB.GetAllFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, dbFeedsToJSONFeeds(feeds))
+}

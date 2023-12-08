@@ -44,3 +44,11 @@ func dbFeedToJSONFeed(feed database.Feed) Feed {
 		Userid:    feed.Userid,
 	}
 }
+
+func dbFeedsToJSONFeeds(dbFeeds []database.Feed) []Feed {
+	jsonFeeds := make([]Feed, len(dbFeeds))
+	for i := range jsonFeeds {
+		jsonFeeds[i] = dbFeedToJSONFeed(dbFeeds[i])
+	}
+	return jsonFeeds
+}
