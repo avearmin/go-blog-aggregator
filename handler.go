@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/avearmin/go-blog-aggregator/internal/database"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -82,4 +83,57 @@ func (cfg apiConfig) handleGetAllFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSON(w, http.StatusOK, dbFeedsToJSONFeeds(feeds))
+}
+
+func (cfg apiConfig) handleGetFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
+	feedFollows, err := cfg.DB.GetAllFeedFollowsForUser(r.Context(), user.ID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, dbFeedFollowsToJSONFeedFollows(feedFollows))
+}
+
+func (cfg apiConfig) handlePostFeedFollow(w http.ResponseWriter, r *http.Request, user database.User) {
+	type parameters struct {
+		FeedID string `json:"feed_id"`
+	}
+	params := parameters{}
+	if err := readParameters(r, &params); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	feedID, err := uuid.Parse(params.FeedID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	feedFollow, err := cfg.DB.CreateFeedFollow(r.Context(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		FeedID:    feedID,
+		UserID:    user.ID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, dbFeedFollowToJSONFeedFollow(feedFollow))
+}
+
+func (cfg apiConfig) handleDeleteFeedFollow(w http.ResponseWriter, r *http.Request, user database.User) {
+	feedFollowID := chi.URLParam(r, "feedFollowID")
+	feedFollowUUID, err := uuid.Parse(feedFollowID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	err = cfg.DB.DeleteFeedFollow(r.Context(), feedFollowUUID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	type payload struct{}
+	respondWithJSON(w, http.StatusOK, payload{})
 }

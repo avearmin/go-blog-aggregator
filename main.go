@@ -48,6 +48,9 @@ func main() {
 	subRouter.Get("/users", apiConfig.middlewareAuth(handleGetUser))
 	subRouter.Get("/feeds", apiConfig.handleGetAllFeeds)
 	subRouter.Post("/feeds", apiConfig.middlewareAuth(apiConfig.handlePostFeed))
+	subRouter.Get("/feed_follows", apiConfig.middlewareAuth(apiConfig.handleGetFeedFollows))
+	subRouter.Post("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlePostFeedFollow))
+	subRouter.Delete("/feed_follows/{feedFollowID}", apiConfig.middlewareAuth(apiConfig.handleDeleteFeedFollow))
 	mainRouter.Mount("/v1", subRouter)
 
 	server := http.Server{
