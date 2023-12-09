@@ -60,7 +60,6 @@ func (cfg apiConfig) handlePostFeed(w http.ResponseWriter, r *http.Request, user
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	feed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
@@ -73,7 +72,19 @@ func (cfg apiConfig) handlePostFeed(w http.ResponseWriter, r *http.Request, user
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJSON(w, http.StatusOK, dbFeedToJSONFeed(feed))
+	feedFollow, err := cfg.DB.CreateFeedFollow(r.Context(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		FeedID:    feed.ID,
+		UserID:    user.ID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	payload := [2]any{dbFeedToJSONFeed(feed), dbFeedFollowToJSONFeedFollow(feedFollow)}
+	respondWithJSON(w, http.StatusOK, payload)
 }
 
 func (cfg apiConfig) handleGetAllFeeds(w http.ResponseWriter, r *http.Request) {
