@@ -16,12 +16,13 @@ type User struct {
 }
 
 type Feed struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
-	Url       string    `json:"apikey"`
-	Userid    uuid.UUID `json:"userid"`
+	ID            uuid.UUID `json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	Name          string    `json:"name"`
+	Url           string    `json:"apikey"`
+	Userid        uuid.UUID `json:"userid"`
+	LastFetchedAt time.Time `json:"last_fetched_at"`
 }
 
 type FeedFollow struct {
@@ -44,12 +45,13 @@ func dbUserToJSONUser(user database.User) User {
 
 func dbFeedToJSONFeed(feed database.Feed) Feed {
 	return Feed{
-		ID:        feed.ID,
-		CreatedAt: feed.CreatedAt,
-		UpdatedAt: feed.UpdatedAt,
-		Name:      feed.Name,
-		Url:       feed.Url,
-		Userid:    feed.Userid,
+		ID:            feed.ID,
+		CreatedAt:     feed.CreatedAt,
+		UpdatedAt:     feed.UpdatedAt,
+		Name:          feed.Name,
+		Url:           feed.Url,
+		Userid:        feed.Userid,
+		LastFetchedAt: feed.LastFetchedAt.Time,
 	}
 }
 
