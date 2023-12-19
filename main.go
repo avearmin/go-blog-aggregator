@@ -57,5 +57,6 @@ func main() {
 		Addr:    ":" + port,
 		Handler: mainRouter,
 	}
+	go worker(apiConfig.DB)
 	server.ListenAndServe()
 }
