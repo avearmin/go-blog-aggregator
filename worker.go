@@ -32,8 +32,9 @@ func worker(DB *database.Queries) {
 		for _, feed := range nextFeeds {
 			log.Printf("Worker fetching: %s", feed.Url)
 			wg.Add(1)
-			go func(feed database.Feed) {
+			go func(DB *database.Queries, feed database.Feed) {
 				defer wg.Done()
+				DB.MarkFeedFetched(context.Background(), feed.ID)
 				rss, err := fetchFromFeed(feed.Url)
 				if err != nil {
 					log.Printf("Worker encountered error: %s", err)
@@ -42,7 +43,7 @@ func worker(DB *database.Queries) {
 				log.Printf("Worker adding %s to process queue", feed.Url)
 				rssToProcess = append(rssToProcess, rss)
 				mu.Unlock()
-			}(feed)
+			}(DB, feed)
 		}
 		wg.Wait()
 		for _, rss := range rssToProcess {
