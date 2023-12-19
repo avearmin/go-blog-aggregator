@@ -31,8 +31,8 @@ func worker(DB *database.Queries) {
 		rssToProcess := []RSS{}
 		for _, feed := range nextFeeds {
 			log.Printf("Worker fetching: %s", feed.Url)
-			wg.Add(1)
 			go func(DB *database.Queries, feed database.Feed) {
+				wg.Add(1)
 				defer wg.Done()
 				DB.MarkFeedFetched(context.Background(), feed.ID)
 				rss, err := fetchFromFeed(feed.Url)
