@@ -148,3 +148,24 @@ func (cfg apiConfig) handleDeleteFeedFollow(w http.ResponseWriter, r *http.Reque
 	type payload struct{}
 	respondWithJSON(w, http.StatusOK, payload{})
 }
+
+func (cfg apiConfig) handleGetPosts(w http.ResponseWriter, r *http.Request, user database.User) {
+	type parameters struct {
+		PostsLimit int `json:"limit"`
+	}
+	params := parameters{}
+	if err := readParameters(r, &params); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	posts, err := cfg.DB.GetPostsByUser(r.Context(), database.GetPostsByUserParams{
+		Userid: user.ID,
+		Limit:  int32(params.PostsLimit),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, dbPostsToJSONPosts(posts))
+}

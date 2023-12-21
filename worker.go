@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/avearmin/go-blog-aggregator/internal/database"
+	"github.com/google/uuid"
 )
 
 // What a horrible function; will need to clean this up ALOT
@@ -15,8 +17,7 @@ func worker(DB *database.Queries) {
 
 	numFeedsToFetch := 10
 	interval := 60 * time.Second
-	wg := sync.WaitGroup{}
-	mu := &sync.Mutex{}
+	wg := &sync.WaitGroup{}
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -28,27 +29,45 @@ func worker(DB *database.Queries) {
 			log.Printf("Worked encountered error: %s", err)
 			continue
 		}
-		rssToProcess := []RSS{}
+
 		for _, feed := range nextFeeds {
 			log.Printf("Worker fetching: %s", feed.Url)
-			go func(DB *database.Queries, feed database.Feed) {
-				wg.Add(1)
+			wg.Add(1)
+			go func(wg *sync.WaitGroup, DB *database.Queries, feed database.Feed) {
 				defer wg.Done()
 				DB.MarkFeedFetched(context.Background(), feed.ID)
 				rss, err := fetchFromFeed(feed.Url)
 				if err != nil {
 					log.Printf("Worker encountered error: %s", err)
 				}
-				mu.Lock()
-				log.Printf("Worker adding %s to process queue", feed.Url)
-				rssToProcess = append(rssToProcess, rss)
-				mu.Unlock()
-			}(DB, feed)
+
+				for _, post := range rss.Channel.Item {
+					var publishedAt sql.NullTime
+					pubDate, err := time.Parse(time.RFC1123, post.PubDate)
+					if err != nil {
+						log.Println("Worker encountered error parsing pub date from post. Will insert NULL.")
+						publishedAt = sql.NullTime{Valid: false}
+					} else {
+						publishedAt = sql.NullTime{Time: pubDate, Valid: true}
+					}
+					_, err = DB.CreatePost(context.TODO(), database.CreatePostParams{
+						ID:          uuid.New(),
+						CreatedAt:   time.Now(),
+						UpdatedAt:   time.Now(),
+						Title:       post.Title,
+						Url:         post.Link,
+						Description: sql.NullString{String: post.Description, Valid: true},
+						PublishedAt: publishedAt,
+						FeedID:      feed.ID,
+					})
+					if err != nil {
+						return
+					}
+					log.Printf("Inserted %s into DB", post.Title)
+				}
+			}(wg, DB, feed)
 		}
 		wg.Wait()
-		for _, rss := range rssToProcess {
-			log.Printf("Worker processed: %s", rss.Channel.Title)
-		}
 		log.Println("Worker going to sleep")
 	}
 }

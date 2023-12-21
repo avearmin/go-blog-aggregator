@@ -33,6 +33,17 @@ type FeedFollow struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Post struct {
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Title       string    `json:"Title"`
+	Url         string    `json:"url"`
+	Description string    `json:"description"`
+	PublishedAt time.Time `json:"published_at"`
+	FeedID      uuid.UUID `json:"feed_id"`
+}
+
 func dbUserToJSONUser(user database.User) User {
 	return User{
 		ID:        user.ID,
@@ -79,4 +90,25 @@ func dbFeedFollowsToJSONFeedFollows(dbFeedFollows []database.FeedFollow) []FeedF
 		jsonFeedFollows[i] = dbFeedFollowToJSONFeedFollow(dbFeedFollows[i])
 	}
 	return jsonFeedFollows
+}
+
+func dbPostToJSONPost(dbPost database.Post) Post {
+	return Post{
+		ID:          dbPost.ID,
+		CreatedAt:   dbPost.CreatedAt,
+		UpdatedAt:   dbPost.UpdatedAt,
+		Title:       dbPost.Title,
+		Url:         dbPost.Url,
+		Description: dbPost.Description.String,
+		PublishedAt: dbPost.PublishedAt.Time,
+		FeedID:      dbPost.FeedID,
+	}
+}
+
+func dbPostsToJSONPosts(dbPosts []database.Post) []Post {
+	jsonPosts := make([]Post, len(dbPosts))
+	for i := range jsonPosts {
+		jsonPosts[i] = dbPostToJSONPost(dbPosts[i])
+	}
+	return jsonPosts
 }
